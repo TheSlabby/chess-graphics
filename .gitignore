@@ -1,0 +1,8 @@
+# ignore built artifacts
+sfml_test
+*o
+*.out
+
+.vscode/
+*.swp
+*.swo
