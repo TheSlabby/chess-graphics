@@ -2,7 +2,9 @@
 sfml_test
 *o
 *.out
+build
 
 .vscode/
 *.swp
 *.swo
+

@@ -119,6 +119,20 @@ int main() {
 		// now render the pieces on the board
 		board.render(window);
 
+
+		// now render possible moves based ony mouse hover
+		Piece hoverPiece = board.getPiece(mousePos.x, mousePos.y);
+		if (hoverPiece.isValid()) {
+			std::vector<vec2i> legalMoves = board.getMoves(hoverPiece);
+			for (auto move : legalMoves) {
+				int sizeOffset = squareSize / 4;
+				sf::CircleShape circle(sizeOffset);
+				circle.setFillColor(sf::Color(128, 128, 128, 192));
+				circle.setPosition(mousePos.x + squareSize*move.x + sizeOffset, mousePos.y + squareSize*move.y + sizeOffset);
+				window.draw(circle);
+			}
+		}
+
 		// window.draw(text);
 		window.display();
 	}

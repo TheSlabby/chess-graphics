@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdint>
 #include <SFML/Graphics.hpp>
+
 // macro stuff
 using vec2i = sf::Vector2i;
 
@@ -36,13 +37,22 @@ public:
     // getters
     Type getType() const { return type; }
     Color getColor() const { return color; }
+    vec2i getLocation() const { return location; }
+    bool isValid() const { return type != Type::None; }
 
     // setters
     void setType(Type t) { type = t; }
     void setColor(Color c) { color = c; }
+    void syncLocation(vec2i dest) { location = dest; };
+
+
+    // get move direction, move offsets, etc.
+    std::vector<vec2i> getMoveDirections();
+    std::vector<vec2i> getMoveOffsets();
 
  private:
     Type type;
     Color color;
+    vec2i location;
 
 };
