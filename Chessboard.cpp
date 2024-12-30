@@ -7,6 +7,11 @@ constexpr int pieceImageSize = 480;
 constexpr float pieceScale = static_cast<float>(squareSize) / pieceImageSize;
 constexpr float HOVER_DARKEN_STRENGTH = .8;
 
+
+bool inBounds(int pos) {
+    return (pos >= 0 && pos <= 7);
+}
+
 Chessboard::Chessboard() {
     this->initialize();
 
@@ -50,7 +55,13 @@ void Chessboard::initialize() {
     this->syncPieceLocations();
 }
 
-Piece Chessboard::getPiece(int x, int y) { return board[x][y]; }
+Piece Chessboard::getPiece(int x, int y) {
+    if (inBounds(x) && inBounds(y)) {
+        return board[x][y];
+    } else {
+        return Piece();
+    }
+}
 
 void Chessboard::setPiece(int x, int y, Piece piece) { board[x][y] = piece; }
 
@@ -115,10 +126,6 @@ void Chessboard::renderPiece(Piece piece, vec2i pos, sf::RenderWindow &window) {
 
 
 
-void Chessboard::movePiece(Piece piece, vec2i destination) {
-
-}
-
 // make it so the piece themselves know where they are
 void Chessboard::syncPieceLocations() {
     for (int i = 0; i < 8; ++i) {
@@ -173,5 +180,60 @@ std::vector<vec2i> Chessboard::getMoves(Piece piece) {
         }
     }
 
+    // pawns are special (en passant, take diagonal, double push, etc)
+    if (piece.getType() == Piece::Type::Pawn) {
+        int dir = piece.getColor() == Piece::Color::White ? -1 : 1; // -1 if white, 1 if black
+        vec2i pos = piece.getLocation();
+        vec2i pushPos = pos + vec2i(0, dir);
+        vec2i doublePushPos = pushPos + vec2i(0, dir);
+
+        // see if pawn can push forward
+        if (inBounds(pushPos.y) && !board[pushPos.x][pushPos.y].isValid()) { // check in bounds, then see if theres a pawn in the way
+            moves.push_back(pushPos);
+
+            // now check if double push is possible (no piece in way, AND 2nd or 6th rank)
+            if (inBounds(doublePushPos.y) && !board[doublePushPos.x][doublePushPos.y].isValid() && (pos.y == 1 || pos.y == 6)) { 
+                moves.push_back(doublePushPos);
+            }
+        }
+
+        // see if pawn can take on diagonal
+        vec2i diagonalLeft(pos + vec2i(-1, dir));
+        vec2i diagonalRight(pos + vec2i(1, dir));
+        if (inBounds(diagonalLeft.x)) {
+            Piece targetPiece = board[diagonalLeft.x][diagonalLeft.y];
+            if (targetPiece.isValid() && targetPiece.getColor() != piece.getColor())
+                moves.push_back(diagonalLeft);
+        }
+        if (inBounds(diagonalRight.x)) {
+            Piece targetPiece = board[diagonalRight.x][diagonalRight.y];
+            if (targetPiece.isValid() && targetPiece.getColor() != piece.getColor())
+                moves.push_back(diagonalRight);
+        }
+    }
+
     return moves;
+}
+
+
+bool Chessboard::movePiece(Piece piece, vec2i dest) {
+    // first things first we gotta make sure this move is legal :D
+    auto moves = getMoves(piece);
+
+    // search moves for this move
+    auto it = std::find(moves.begin(), moves.end(), dest);
+    if (it == moves.end()) {
+        std::cout << "User attempted illegal move :(\n";
+        return false;
+    }
+
+
+    vec2i sourcePos = piece.getLocation();
+    setPiece(sourcePos.x, sourcePos.y, Piece()); // set source to empty peace, as there is no longer a piece here
+    setPiece(dest.x, dest.y, piece);
+
+    // now sync positions for all pieces
+    syncPieceLocations();
+
+    return true;
 }

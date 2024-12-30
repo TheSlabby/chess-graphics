@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include "Chessboard.h"
 
@@ -18,7 +19,7 @@ sf::Vector2i getHover(sf::RenderWindow& window) {
 	return mousePos / squareSize;
 }
 
-void drawChessboard(sf::RenderWindow& window) {
+void drawChessboard(sf::RenderWindow& window, Chessboard& board) {
 	const int squareSize = windowSize / 8;
 
 	for (int i = 0; i < 8; ++i) {
@@ -45,6 +46,16 @@ void drawChessboard(sf::RenderWindow& window) {
 			window.draw(square);
 		}
 	}
+
+	// now draw square if user is moving a piece
+	if (board.mouseMoveSource.x != -1) {
+		sf::RectangleShape square(sf::Vector2f(squareSize, squareSize));
+		square.setPosition(board.mouseMoveSource.x * squareSize, board.mouseMoveSource.y * squareSize);
+		square.setFillColor(sf::Color(219, 161, 0));
+
+		window.draw(square);
+
+	}
 }
 
 int main() {
@@ -63,6 +74,26 @@ int main() {
 	text.setString("Chess Graphics");
 	text.setCharacterSize(60);
 	text.setFillColor(sf::Color(0, 0, 0));
+
+	// audio init
+	sf::SoundBuffer musicSoundBuffer;
+	sf::Sound musicSound;
+	sf::SoundBuffer movePieceSoundBuffer;
+	sf::Sound movePieceSound;
+    if (!musicSoundBuffer.loadFromFile("assets/2009-03-30-clairdelune.ogg")) { // Replace with your file name
+        std::cerr << "Error loading sound file!" << std::endl;
+        return -1;
+    }
+	if (!movePieceSoundBuffer.loadFromFile("assets/move-self.ogg")) { // Replace with your file name
+        std::cerr << "Error loading sound file!" << std::endl;
+        return -1;
+    }
+	musicSound.setBuffer(musicSoundBuffer);
+	movePieceSound.setBuffer(movePieceSoundBuffer);
+
+	musicSound.setLoop(true);
+	musicSound.play();
+
 
 
 	// instantiate clocks
@@ -85,6 +116,9 @@ int main() {
 
 
 	while (window.isOpen()) {
+		sf::Vector2i mousePos = getHover(window);
+
+
 		sf::Event event;
 		while (window.pollEvent(event)) {
 			if (event.type == sf::Event::Closed)
@@ -96,11 +130,32 @@ int main() {
 					window.close();
 				}
 			}
+
+			// mouse down
+			if (event.type == sf::Event::MouseButtonPressed) {
+				board.mouseMoveSource = mousePos;
+			}
+			if (event.type == sf::Event::MouseButtonReleased) {
+				if (board.mouseMoveSource.x != -1) {
+					// perform peice movement
+					vec2i source = board.mouseMoveSource;
+					vec2i dest = mousePos;
+					Piece sourcePiece = board.getPiece(source.x, source.y);
+
+					if (board.movePiece(sourcePiece, dest)) {
+						std::cout << "Successfully moved piece\n";
+						movePieceSound.play();
+					} else {
+						std::cout << "FAILED TO MOVE PIECE!\n";
+					}
+				}
+
+				board.mouseMoveSource = vec2i(-1, -1);
+			}
 		}
 
 		window.clear();
 
-		sf::Vector2i mousePos = getHover(window);
 
 		// get fps
 		float fps = 1.0f / fpsClock.restart().asSeconds();
@@ -114,7 +169,7 @@ int main() {
 
 
 		// checkerboard tiles
-		drawChessboard(window);
+		drawChessboard(window, board);
 
 		// now render the pieces on the board
 		board.render(window);
