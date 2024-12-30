@@ -15,7 +15,8 @@ public:
     Piece getPiece(int x, int y);
     void setPiece(int x, int y, Piece piece);
     void printBoard() const; // const means we dont actually change the elements in this class
-    bool movePiece(Piece piece, vec2i destination);
+    bool movePiece(Piece piece, vec2i destination, bool force = false);
+    bool canMovePiece(Piece piece, vec2i destination);
 
     std::vector<vec2i> getMoves(Piece piece);
 

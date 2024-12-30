@@ -2,6 +2,7 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 #include "Chessboard.h"
+#include "PGNReader.h"
 
 // macro stuff
 using vec2i = sf::Vector2i;
@@ -115,6 +116,11 @@ int main() {
 
 
 
+	// LOAD GAME PGN
+	PGNReader pgnReader("assets/kasparov_pgn.txt", board);
+	pgnReader.print();
+
+
 	while (window.isOpen()) {
 		sf::Vector2i mousePos = getHover(window);
 
@@ -128,6 +134,10 @@ int main() {
 				if (event.key.code == sf::Keyboard::Escape) {
 					std::cout << "Escape pressed, closing..\n";
 					window.close();
+				} else if (event.key.code == sf::Keyboard::Right) {
+					if (pgnReader.playNext()) {
+						movePieceSound.play();
+					}
 				}
 			}
 
@@ -162,8 +172,8 @@ int main() {
 
 		// debug output
 		if (debugClock.getElapsedTime().asSeconds() > 1.0f) {
-			std::cout << "FPS: " << fps << "\tMouse X: " << mousePos.x << "\tMouse Y: " << mousePos.y << std::endl;
-			board.printBoard();
+			// std::cout << "FPS: " << fps << "\tMouse X: " << mousePos.x << "\tMouse Y: " << mousePos.y << std::endl;
+			// board.printBoard();
 			debugClock.restart();
 		}
 

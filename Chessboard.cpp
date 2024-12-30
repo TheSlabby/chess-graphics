@@ -215,17 +215,25 @@ std::vector<vec2i> Chessboard::getMoves(Piece piece) {
     return moves;
 }
 
-
-bool Chessboard::movePiece(Piece piece, vec2i dest) {
+bool Chessboard::canMovePiece(Piece piece, vec2i dest) {
     // first things first we gotta make sure this move is legal :D
     auto moves = getMoves(piece);
 
     // search moves for this move
     auto it = std::find(moves.begin(), moves.end(), dest);
     if (it == moves.end()) {
-        std::cout << "User attempted illegal move :(\n";
+        // std::cout << "User attempted illegal move :(\n";
         return false;
     }
+    return true;
+}
+
+bool Chessboard::movePiece(Piece piece, vec2i dest, bool force) {
+    // first things first we gotta make sure this move is legal :D
+    if (!force) {
+        if (!canMovePiece(piece, dest)) return false;
+    }
+    
 
 
     vec2i sourcePos = piece.getLocation();
