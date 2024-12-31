@@ -278,11 +278,11 @@ std::vector<vec2i> Chessboard::getMoves(Piece piece, bool ensureKingSafe) {
     return filteredMoves;
 }
 
-bool Chessboard::canMovePiece(Piece piece, vec2i dest) {
+bool Chessboard::canMovePiece(Piece piece, vec2i dest, bool ensureKingSafe) {
     if (!piece.isValid())
         return false;
     // first things first we gotta make sure this move is legal :D
-    auto moves = getMoves(piece, true);
+    auto moves = getMoves(piece, ensureKingSafe);
 
     // search moves for this move
     auto it = std::find(moves.begin(), moves.end(), dest);

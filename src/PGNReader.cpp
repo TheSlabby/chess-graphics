@@ -177,11 +177,11 @@ void PGNReader::playMove(Move move) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 Piece piece = board.getPiece(i, j);
-                if (piece.getType() == type && board.canMovePiece(piece, dest) && piece.getColor() == move.color) {
+                if (piece.getType() == type && board.canMovePiece(piece, dest, false) && piece.getColor() == move.color) {
                     // finally, verify we're on proper source X (for pawn taking)
                     if (sourceX == -1 || sourceX == i) {
                         // this piece CAN move here AND is the right type, so return this
-                        board.movePiece(piece, dest);
+                        board.movePiece(piece, dest, true);
                         return;
                     }
                 }

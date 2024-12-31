@@ -23,7 +23,7 @@ public:
     void setPiece(int x, int y, Piece piece);
     void printBoard() const; // const means we dont actually change the elements in this class
     bool movePiece(Piece piece, vec2i destination, bool force = false);
-    bool canMovePiece(Piece piece, vec2i destination);
+    bool canMovePiece(Piece piece, vec2i destination, bool ensureKingSafe = true);
     bool isSquareSafe(vec2i destination, Piece::Color defender);
     bool isCheckmate(Piece::Color defender);
     int getMoveNumber() const { return moveNumber; }
