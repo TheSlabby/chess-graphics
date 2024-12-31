@@ -5,6 +5,7 @@
 #include "Piece.h"
 #include <cstdint>
 #include <vector>
+#include <cmath>
 
 
 class Chessboard {
@@ -17,6 +18,9 @@ public:
     void printBoard() const; // const means we dont actually change the elements in this class
     bool movePiece(Piece piece, vec2i destination, bool force = false);
     bool canMovePiece(Piece piece, vec2i destination);
+    bool isSquareSafe(vec2i destination, Piece::Color defender);
+
+    Piece getKing(Piece::Color color);
 
     std::vector<vec2i> getMoves(Piece piece);
 

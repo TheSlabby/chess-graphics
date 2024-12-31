@@ -81,6 +81,12 @@ int main() {
 	sf::Sound musicSound;
 	sf::SoundBuffer movePieceSoundBuffer;
 	sf::Sound movePieceSound;
+	sf::SoundBuffer checkSoundBuffer;
+	sf::Sound checkSound;
+	sf::SoundBuffer captureSoundBuffer;
+	sf::Sound captureSound;
+	sf::SoundBuffer castleSoundBuffer;
+	sf::Sound castleSound;
     if (!musicSoundBuffer.loadFromFile("assets/2009-03-30-clairdelune.ogg")) { // Replace with your file name
         std::cerr << "Error loading sound file!" << std::endl;
         return -1;
@@ -89,8 +95,23 @@ int main() {
         std::cerr << "Error loading sound file!" << std::endl;
         return -1;
     }
+	if (!checkSoundBuffer.loadFromFile("assets/move-check.ogg")) { // Replace with your file name
+        std::cerr << "Error loading sound file!" << std::endl;
+        return -1;
+    }
+	if (!captureSoundBuffer.loadFromFile("assets/move-capture.ogg")) { // Replace with your file name
+        std::cerr << "Error loading sound file!" << std::endl;
+        return -1;
+    }
+	if (!castleSoundBuffer.loadFromFile("assets/move-castle.ogg")) { // Replace with your file name
+        std::cerr << "Error loading sound file!" << std::endl;
+        return -1;
+    }
 	musicSound.setBuffer(musicSoundBuffer);
 	movePieceSound.setBuffer(movePieceSoundBuffer);
+	checkSound.setBuffer(checkSoundBuffer);
+	captureSound.setBuffer(captureSoundBuffer);
+	castleSound.setBuffer(castleSoundBuffer);
 
 	musicSound.setLoop(true);
 	musicSound.play();
@@ -141,6 +162,7 @@ int main() {
 				}
 			}
 
+
 			// mouse down
 			if (event.type == sf::Event::MouseButtonPressed) {
 				board.mouseMoveSource = mousePos;
@@ -152,9 +174,28 @@ int main() {
 					vec2i dest = mousePos;
 					Piece sourcePiece = board.getPiece(source.x, source.y);
 
+					bool willCapture = board.getPiece(dest.x, dest.y).isValid();
+
 					if (board.movePiece(sourcePiece, dest)) {
 						std::cout << "Successfully moved piece\n";
-						movePieceSound.play();
+
+						// play move sound
+						if (sourcePiece.getType() == Piece::Type::King && std::abs(dest.x - sourcePiece.getLocation().x) == 2) {
+							castleSound.play();
+						} else if (willCapture)
+							captureSound.play();
+						else
+							movePieceSound.play();
+
+						// now see if king is attacked
+						Piece::Color attacker = sourcePiece.getColor() == Piece::Color::White ? Piece::Color::Black : Piece::Color::White;
+						Piece king = board.getKing(attacker);
+						std::cout << "King Location: " << king.getLocation().x << ", " << king.getLocation().y << std::endl;
+						if (!board.isSquareSafe(king.getLocation(), attacker)) {
+							std::cout << "Check!" << std::endl;
+							checkSound.play();
+						}
+							
 					} else {
 						std::cout << "FAILED TO MOVE PIECE!\n";
 					}

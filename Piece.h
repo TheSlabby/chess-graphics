@@ -39,6 +39,9 @@ public:
     Color getColor() const { return color; }
     vec2i getLocation() const { return location; }
     bool isValid() const { return type != Type::None; }
+    bool hasMoved() const { return numberOfMoves > 0; }
+
+    int numberOfMoves = {0};
 
     // setters
     void setType(Type t) { type = t; }

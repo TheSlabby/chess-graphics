@@ -212,6 +212,37 @@ std::vector<vec2i> Chessboard::getMoves(Piece piece) {
         }
     }
 
+    // castling - CONDITIONS: 1. pieces havent moved 2. all pieces are unoccupied betwen 3. spaces are safe
+    // std::cout << "has moved: " << piece.hasMoved() << std::endl;
+    if (piece.getType() == Piece::Type::King && piece.hasMoved() == false) {
+        int y = piece.getLocation().y;
+        Piece rightRook = getPiece(7, y);
+        Piece leftRook = getPiece(0, y);
+
+        // right castle
+        if (rightRook.getType() == Piece::Type::Rook && !rightRook.hasMoved()) {
+            // now verify all squares are safe & unoccupied
+            if (!getPiece(6, y).isValid() && !getPiece(5, y).isValid()) {
+                // finally make sure these spaces are safe
+                if (isSquareSafe(vec2i(4, y), piece.getColor()) && isSquareSafe(vec2i(5, y), piece.getColor()) && isSquareSafe(vec2i(6, y), piece.getColor())) {
+                    moves.push_back(vec2i(start.x + 2, start.y));
+                }
+                
+            }
+        }
+        // left castle
+        if (leftRook.getType() == Piece::Type::Rook && !leftRook.hasMoved()) {
+            // now verify all squares are safe & unoccupied
+            if (!getPiece(1, y).isValid() && !getPiece(2, y).isValid() && !getPiece(3, y).isValid()) {
+                // finally make sure these spaces are safe
+                if (isSquareSafe(vec2i(2, y), piece.getColor()) && isSquareSafe(vec2i(3, y), piece.getColor()) && isSquareSafe(vec2i(4, y), piece.getColor())) {
+                    moves.push_back(vec2i(start.x - 2, start.y));
+                }
+                
+            }
+        }
+    }
+
     return moves;
 }
 
@@ -234,14 +265,60 @@ bool Chessboard::movePiece(Piece piece, vec2i dest, bool force) {
         if (!canMovePiece(piece, dest)) return false;
     }
     
-
-
     vec2i sourcePos = piece.getLocation();
+    piece.numberOfMoves++;
+
+    // check if this is a castling move
+    if (piece.getType() == Piece::Type::King) {
+        if (dest.x - piece.getLocation().x == 2) {
+            // right castle detected
+            setPiece(sourcePos.x + 1, sourcePos.y, getPiece(7, sourcePos.y));
+            setPiece(7, sourcePos.y,  Piece());
+        } else if (dest.x - piece.getLocation().x == -2) {
+            // left castle detected
+            setPiece(sourcePos.x - 1, sourcePos.y, getPiece(0, sourcePos.y));
+            setPiece(0, sourcePos.y,  Piece());
+        }
+    }
+
     setPiece(sourcePos.x, sourcePos.y, Piece()); // set source to empty peace, as there is no longer a piece here
     setPiece(dest.x, dest.y, piece);
 
     // now sync positions for all pieces
     syncPieceLocations();
+
+    return true;
+}
+
+Piece Chessboard::getKing(Piece::Color color) {
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            Piece p = this->getPiece(i, j);
+            if (p.getColor() == color && p.getType() == Piece::Type::King) {
+                return p;
+            }
+        }
+    }
+
+    return Piece();
+}
+
+// check if square is safe. useful for castling & detecting check/checkmate
+bool Chessboard::isSquareSafe(vec2i destination, Piece::Color defender) {
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            Piece piece = this->getPiece(i, j);
+            if (piece.isValid() && piece.getColor() != defender) {
+                auto moves = this->getMoves(piece);
+                for (const auto& move : moves) {
+                    if (move == destination) {
+                        // an attacker CAN move to this square, so its NOT safe.
+                        return false;
+                    }
+                }
+            }
+        }
+    }
 
     return true;
 }
