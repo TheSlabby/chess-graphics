@@ -12,6 +12,12 @@ class Chessboard {
 public:
     Chessboard();
 
+    // copy constructor (for move filtering to keep king safe)
+    Chessboard(const Chessboard& other) {
+        this->board = other.board;
+        this->moveNumber = other.moveNumber;
+    }
+
     void initialize();
     Piece getPiece(int x, int y);
     void setPiece(int x, int y, Piece piece);
@@ -19,10 +25,12 @@ public:
     bool movePiece(Piece piece, vec2i destination, bool force = false);
     bool canMovePiece(Piece piece, vec2i destination);
     bool isSquareSafe(vec2i destination, Piece::Color defender);
+    bool isCheckmate(Piece::Color defender);
+    int getMoveNumber() const { return moveNumber; }
 
     Piece getKing(Piece::Color color);
 
-    std::vector<vec2i> getMoves(Piece piece);
+    std::vector<vec2i> getMoves(Piece piece, bool ensureKingSafe = false);
 
     // render stuff
     void render(sf::RenderWindow& window);

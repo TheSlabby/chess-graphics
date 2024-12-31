@@ -138,7 +138,7 @@ void Chessboard::syncPieceLocations() {
 
 
 
-std::vector<vec2i> Chessboard::getMoves(Piece piece) {
+std::vector<vec2i> Chessboard::getMoves(Piece piece, bool ensureKingSafe) {
     std::vector<vec2i> moves;
 
     vec2i start = piece.getLocation();
@@ -174,10 +174,13 @@ std::vector<vec2i> Chessboard::getMoves(Piece piece) {
     std::vector<vec2i> moveOffsets = piece.getMoveOffsets();
     for (auto offset : moveOffsets) {
         vec2i newPos = start + offset;
-        Piece goalPiece = board[newPos.x][newPos.y];
-        if (!goalPiece.isValid() || (goalPiece.getColor() != piece.getColor())) {
-            moves.push_back(newPos);
+        if (inBounds(newPos.x) && inBounds(newPos.y)) {
+            Piece goalPiece = board[newPos.x][newPos.y];
+            if (!goalPiece.isValid() || (goalPiece.getColor() != piece.getColor())) {
+                moves.push_back(newPos);
+            }
         }
+        
     }
 
     // pawns are special (en passant, take diagonal, double push, etc)
@@ -249,12 +252,37 @@ std::vector<vec2i> Chessboard::getMoves(Piece piece) {
         }
     }
 
-    return moves;
+    std::vector<vec2i> filteredMoves;
+
+    if (ensureKingSafe) {
+        vec2i originalPos = piece.getLocation();
+        auto boardCopy = board;
+        piece = getPiece(originalPos.x, originalPos.y);
+
+        for (const auto& move : moves) {
+            // piece = getPiece(start.x, start.y);
+            movePiece(piece, move, true);
+            Piece king = getKing(piece.getColor());
+            if (isSquareSafe(king.getLocation(), piece.getColor())) {
+                // std::cout << "found a legal move lol\n";
+                filteredMoves.push_back(move);
+            }
+            board = boardCopy;
+            --moveNumber; // movePiece increments by 1, but we want to reverse this
+        }
+    } else {
+        filteredMoves = moves;
+    }
+
+
+    return filteredMoves;
 }
 
 bool Chessboard::canMovePiece(Piece piece, vec2i dest) {
+    if (!piece.isValid())
+        return false;
     // first things first we gotta make sure this move is legal :D
-    auto moves = getMoves(piece);
+    auto moves = getMoves(piece, true);
 
     // search moves for this move
     auto it = std::find(moves.begin(), moves.end(), dest);
@@ -294,8 +322,13 @@ bool Chessboard::movePiece(Piece piece, vec2i dest, bool force) {
     // check if this is an en passant
     int dir = piece.getColor() == Piece::Color::White ? -1 : 1; // -1 if white, 1 if black
     if (piece.getType() == Piece::Type::Pawn && dest.x != sourcePos.x && !getPiece(dest.x, dest.y).isValid()) {
-        std::cout << "En Passant!" << std::endl;
+        // std::cout << "En Passant!" << std::endl;
         setPiece(dest.x, sourcePos.y, Piece()); // kill the pawn
+    }
+
+    // pawn promotion
+    if (piece.getType() == Piece::Type::Pawn && (dest.y == 0 || dest.y == 7)) {
+        piece.setType(Piece::Type::Queen);
     }
 
     setPiece(sourcePos.x, sourcePos.y, Piece()); // set source to empty peace, as there is no longer a piece here
@@ -332,12 +365,28 @@ bool Chessboard::isSquareSafe(vec2i destination, Piece::Color defender) {
                 for (const auto& move : moves) {
                     if (move == destination) {
                         // an attacker CAN move to this square, so its NOT safe.
+                        // std::cout << "UNSAFE SQUARE: " << destination.x << ", " << destination.y << std::endl;
                         return false;
                     }
                 }
             }
         }
     }
-
     return true;
+}
+
+
+bool Chessboard::isCheckmate(Piece::Color defender) {
+    int moveCount = 0;
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            Piece p = getPiece(i, j);
+            if (p.isValid() && p.getColor() == defender) {
+                auto moves = getMoves(p, true);
+                moveCount += moves.size();
+            }
+        }
+    }
+
+    return moveCount == 0;
 }

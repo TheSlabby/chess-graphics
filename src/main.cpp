@@ -72,9 +72,8 @@ int main() {
 	}
 	sf::Text text;
 	text.setFont(font);
-	text.setString("Chess Graphics");
-	text.setCharacterSize(60);
-	text.setFillColor(sf::Color(0, 0, 0));
+	text.setCharacterSize(100);
+	text.setFillColor(sf::Color(200, 0, 0));
 
 	// audio init
 	sf::SoundBuffer musicSoundBuffer;
@@ -128,6 +127,10 @@ int main() {
 	Chessboard board;
 
 
+	// message UI
+	string message = "";
+
+
 	// load sprite sheet
 	sf::Texture spriteSheet;
 	if (!spriteSheet.loadFromFile("assets/pieces_spritesheet.png")) {
@@ -165,7 +168,11 @@ int main() {
 
 			// mouse down
 			if (event.type == sf::Event::MouseButtonPressed) {
-				board.mouseMoveSource = mousePos;
+				// ensure it is the correct persons turn!
+				Piece p = board.getPiece(mousePos.x, mousePos.y);
+				Piece::Color turn = (board.getMoveNumber() % 2) == 0 ? Piece::Color::White : Piece::Color::Black;
+				if (p.getColor() == turn)
+					board.mouseMoveSource = mousePos;
 			}
 			if (event.type == sf::Event::MouseButtonReleased) {
 				if (board.mouseMoveSource.x != -1) {
@@ -177,7 +184,7 @@ int main() {
 					bool willCapture = board.getPiece(dest.x, dest.y).isValid();
 
 					if (board.movePiece(sourcePiece, dest)) {
-						std::cout << "Successfully moved piece\n";
+						std::cout << "Successfully moved piece, move #" << board.getMoveNumber() << std::endl;
 
 						// play move sound
 						if (sourcePiece.getType() == Piece::Type::King && std::abs(dest.x - sourcePiece.getLocation().x) == 2) {
@@ -190,14 +197,20 @@ int main() {
 						// now see if king is attacked
 						Piece::Color attacker = sourcePiece.getColor() == Piece::Color::White ? Piece::Color::Black : Piece::Color::White;
 						Piece king = board.getKing(attacker);
-						std::cout << "King Location: " << king.getLocation().x << ", " << king.getLocation().y << std::endl;
+						// std::cout << "King Location: " << king.getLocation().x << ", " << king.getLocation().y << std::endl;
 						if (!board.isSquareSafe(king.getLocation(), attacker)) {
 							std::cout << "Check!" << std::endl;
 							checkSound.play();
 						}
+
+						// now detect game over
+						if (board.isCheckmate(attacker)) {
+							std::cout << "CHECKMATE!\n";
+							message = "Checkmate!";
+						}
 							
 					} else {
-						std::cout << "FAILED TO MOVE PIECE!\n";
+						// std::cout << "FAILED TO MOVE PIECE!\n";
 					}
 				}
 
@@ -229,7 +242,7 @@ int main() {
 		// now render possible moves based ony mouse hover
 		Piece hoverPiece = board.getPiece(mousePos.x, mousePos.y);
 		if (hoverPiece.isValid()) {
-			std::vector<vec2i> legalMoves = board.getMoves(hoverPiece);
+			std::vector<vec2i> legalMoves = board.getMoves(hoverPiece, true); // TODO do move caching (store possible moves in Piece object)
 			for (auto move : legalMoves) {
 				int sizeOffset = squareSize / 4;
 				sf::CircleShape circle(sizeOffset);
@@ -239,7 +252,11 @@ int main() {
 			}
 		}
 
-		// window.draw(text);
+
+		text.setString(message);
+		window.draw(text);
+
+
 		window.display();
 	}
 
