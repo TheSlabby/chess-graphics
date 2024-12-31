@@ -202,12 +202,18 @@ std::vector<vec2i> Chessboard::getMoves(Piece piece) {
         vec2i diagonalRight(pos + vec2i(1, dir));
         if (inBounds(diagonalLeft.x)) {
             Piece targetPiece = board[diagonalLeft.x][diagonalLeft.y];
+            Piece targetPieceEnPassant = board[diagonalLeft.x][pos.y];
             if (targetPiece.isValid() && targetPiece.getColor() != piece.getColor())
+                moves.push_back(diagonalLeft);
+            else if (targetPieceEnPassant.getType() == Piece::Type::Pawn && targetPieceEnPassant.doublePushed && targetPieceEnPassant.lastMove == moveNumber-1) // en passant
                 moves.push_back(diagonalLeft);
         }
         if (inBounds(diagonalRight.x)) {
             Piece targetPiece = board[diagonalRight.x][diagonalRight.y];
+            Piece targetPieceEnPassant = board[diagonalRight.x][pos.y];
             if (targetPiece.isValid() && targetPiece.getColor() != piece.getColor())
+                moves.push_back(diagonalRight);
+            else if (targetPieceEnPassant.getType() == Piece::Type::Pawn && targetPieceEnPassant.doublePushed && targetPieceEnPassant.lastMove == moveNumber-1) // en passant
                 moves.push_back(diagonalRight);
         }
     }
@@ -268,6 +274,10 @@ bool Chessboard::movePiece(Piece piece, vec2i dest, bool force) {
     vec2i sourcePos = piece.getLocation();
     piece.numberOfMoves++;
 
+    // check if this is a double push (for en passant)
+    piece.doublePushed = std::abs(sourcePos.y - dest.y) == 2;
+    piece.lastMove = moveNumber;
+
     // check if this is a castling move
     if (piece.getType() == Piece::Type::King) {
         if (dest.x - piece.getLocation().x == 2) {
@@ -281,11 +291,20 @@ bool Chessboard::movePiece(Piece piece, vec2i dest, bool force) {
         }
     }
 
+    // check if this is an en passant
+    int dir = piece.getColor() == Piece::Color::White ? -1 : 1; // -1 if white, 1 if black
+    if (piece.getType() == Piece::Type::Pawn && dest.x != sourcePos.x && !getPiece(dest.x, dest.y).isValid()) {
+        std::cout << "En Passant!" << std::endl;
+        setPiece(dest.x, sourcePos.y, Piece()); // kill the pawn
+    }
+
     setPiece(sourcePos.x, sourcePos.y, Piece()); // set source to empty peace, as there is no longer a piece here
     setPiece(dest.x, dest.y, piece);
 
     // now sync positions for all pieces
     syncPieceLocations();
+
+    ++moveNumber;
 
     return true;
 }

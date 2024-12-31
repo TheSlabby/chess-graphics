@@ -42,6 +42,8 @@ public:
     bool hasMoved() const { return numberOfMoves > 0; }
 
     int numberOfMoves = {0};
+    bool doublePushed = {false}; // for en passant
+    int lastMove = {0}; // also for en passant
 
     // setters
     void setType(Type t) { type = t; }

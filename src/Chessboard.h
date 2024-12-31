@@ -34,6 +34,7 @@ private:
     std::array<std::array<Piece, 8>, 8> board;
     void renderPiece(Piece piece, sf::Vector2i pos, sf::RenderWindow& window);
     sf::Texture spriteSheet;
+    int moveNumber = {0};
 
     // sync piece locations with this chessboard
     void syncPieceLocations();
